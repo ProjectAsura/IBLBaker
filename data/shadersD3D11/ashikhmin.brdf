@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// File : harlie.brdf
+// File : ashikhmin.brdf
 // Desc : Cloth BRDF
 // Copyright(c) Project Asura. All right reserved.
 //-----------------------------------------------------------------------------
@@ -13,12 +13,12 @@
 float D_Ashikhmin(float linearRoughness, float NoH)
 {
     // Ashikhmin 2007, "Distribution-based BRDFs"
-	float a2 = linearRoughness * linearRoughness;
-	float cos2h = NoH * NoH;
-	float sin2h = max(1.0 - cos2h, 0.0078125); // 2^(-14/2), so sin2h^2 > 0 in fp16
-	float sin4h = sin2h * sin2h;
-	float cot2 = -cos2h / (a2 * sin2h);
-	return 1.0 / (PI * (4.0 * a2 + 1.0) * sin4h) * (4.0 * exp(cot2) + sin4h);
+    float a2 = linearRoughness * linearRoughness;
+    float cos2h = NoH * NoH;
+    float sin2h = max(1.0 - cos2h, 0.0078125); // 2^(-14/2), so sin2h^2 > 0 in fp16
+    float sin4h = sin2h * sin2h;
+    float cot2 = -cos2h / (a2 * sin2h);
+    return 1.0 / (PI * (4.0 * a2 + 1.0) * sin4h) * (4.0 * exp(cot2) + sin4h);
 }
 
 float geometryForLut(float roughness, float NoL)
@@ -45,14 +45,14 @@ float fresnelForLut(float VoH)
 
 float disneyDiffuse(float NoV, float NoL, float LoH, float linearRoughness)
 {
-     float energyBias = lerp(0.0f, 0.5f, linearRoughness);
-     float energyFactor = lerp(1.0f, 1.0f / 1.51, linearRoughness);
-     float fd90         = energyBias + 2.0f * LoH * LoH * linearRoughness;
-     float3 f0          = float3(1.0f, 1.0f, 1.0f);
-     float lightScatter = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoL);
-     float viewScatter  = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoV);
-     
-     return lightScatter * viewScatter * energyFactor;
+    float energyBias   = lerp(0.0f, 0.5f, linearRoughness);
+    float energyFactor = lerp(1.0f, 1.0f / 1.51, linearRoughness);
+    float fd90         = energyBias + 2.0f * LoH * LoH * linearRoughness;
+    float3 f0          = float3(1.0f, 1.0f, 1.0f);
+    float lightScatter = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoL);
+    float viewScatter  = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoV);
+
+    return lightScatter * viewScatter * energyFactor;
 }
 
 // Summation of Lut term while iterating over samples
@@ -68,8 +68,8 @@ float2 sumLut(float2 current, float G, float V, float F, float VoH, float NoL, f
 
 float sumLutDiffuse(float current, float NoV, float NoL, float LoH, float linearRoughness)
 {
-     current += disneyDiffuse(NoV, NoL, LoH, linearRoughness);
-     return current;
+    current += disneyDiffuse(NoV, NoL, LoH, linearRoughness);
+    return current;
 }
 
 
@@ -110,7 +110,7 @@ float3 importanceSampleGGX(float2 Xi, float roughness, float3 N)
 // http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
 float specularD(float roughness, float NoH)
 {
-	return D_Ashikhmin(roughness, NoH);
+    return D_Ashikhmin(roughness, NoH);
 }
 
 float4

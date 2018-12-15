@@ -81,14 +81,14 @@ float fresnelForLut(float VoH)
 
 float disneyDiffuse(float NoV, float NoL, float LoH, float linearRoughness)
 {
-     float energyBias = lerp(0.0f, 0.5f, linearRoughness);
-     float energyFactor = lerp(1.0f, 1.0f / 1.51, linearRoughness);
-     float fd90         = energyBias + 2.0f * LoH * LoH * linearRoughness;
-     float3 f0          = float3(1.0f, 1.0f, 1.0f);
-     float lightScatter = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoL);
-     float viewScatter  = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoV);
-     
-     return lightScatter * viewScatter * energyFactor;
+    float energyBias   = lerp(0.0f, 0.5f, linearRoughness);
+    float energyFactor = lerp(1.0f, 1.0f / 1.51, linearRoughness);
+    float fd90         = energyBias + 2.0f * LoH * LoH * linearRoughness;
+    float3 f0          = float3(1.0f, 1.0f, 1.0f);
+    float lightScatter = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoL);
+    float viewScatter  = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoV);
+
+    return lightScatter * viewScatter * energyFactor;
 }
 
 // Summation of Lut term while iterating over samples
@@ -104,8 +104,8 @@ float2 sumLut(float2 current, float G, float V, float F, float VoH, float NoL, f
 
 float sumLutDiffuse(float current, float NoV, float NoL, float LoH, float linearRoughness)
 {
-     current += disneyDiffuse(NoV, NoL, LoH, linearRoughness);
-     return current;
+    current += disneyDiffuse(NoV, NoL, LoH, linearRoughness);
+    return current;
 }
 
 
