@@ -223,7 +223,7 @@ shade (float vdotn,
     float3 albedoByDiffuse = diffColor.rgb * diffuseIBL.rgb;
 
     float4 litColor;
-    litColor.rgb =  (albedoByDiffuse.rgb + (metalSpecularIBL * (specColor * brdfTerm.x + (brdfTerm.y)))) * bakedAO;
+    litColor.rgb =  (albedoByDiffuse.rgb * brdfTerm.z + (metalSpecularIBL * (specColor * brdfTerm.x + (brdfTerm.y)))) * bakedAO;
     litColor.a = 1.0;
 
     // Yes, yes, I know, I'm being extremely lazy.

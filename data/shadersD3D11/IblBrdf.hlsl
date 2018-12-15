@@ -56,12 +56,12 @@ hammersley(uint i, uint N)
     return float2(float(i) / float(N), radicalInverse_VdC(i));
 }
 
-float2
+float3
 integrate(float roughness, float NoV)
 {
     float3 N = float3(0.0f, 0.0f, 1.0f);
     float3 V = float3(sqrt(1.0f - NoV * NoV), 0.0f, NoV);
-    float2 result = float2(0,0);
+    float3 result = float3(0,0,0);
 
     const uint NumSamples = 1024;
 
@@ -81,12 +81,22 @@ integrate(float roughness, float NoV)
         {
             precise float G = geometryForLut(roughness, NoL);
             precise float F = fresnelForLut(VoH);
-            result = sumLut(result, G, Vis, F, VoH, NoL, NoH, NoV); 
+            result.xy = sumLut(result.xy, G, Vis, F, VoH, NoL, NoH, NoV); 
+        }
+        
+        Xi = frac(Xi + 0.5f);
+        L = importanceSampleDiffuse(Xi, N);
+        NoL = saturate(L.z);
+        if (NoL > 0)
+        {
+            float LoH = saturate(dot(L, normalize(V + L)));
+            result.z = sumLutDiffuse(result.z, NoV, NoL, LoH, roughness);
         }
     }
 
     result.x = (result.x / float(NumSamples)) ;
     result.y = (result.y / float(NumSamples)) ;
+    result.z = (result.z / float(NumSamples)) ;
 
     return result;
 }
@@ -97,7 +107,7 @@ void CSMain(uint2 id : SV_DispatchThreadID)
     float roughness = (float)(id.y+0.5) / 256.0;
     float NoV = (float)(id.x+0.5) / 256.0;
       
-    float2 result = integrate(roughness, NoV); 
+    float3 result = integrate(roughness, NoV); 
     // [TODO]: I need to fix my DDS saver so that is can save R32G32 and R16G16
-    BRDFResult[int2(id.x, 255-id.y)] = float4(result.x, result.y,roughness,1);
+    BRDFResult[int2(id.x, 255-id.y)] = float4(result.x, result.y, result.z, roughness);
 }
