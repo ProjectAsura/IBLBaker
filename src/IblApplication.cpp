@@ -257,7 +257,7 @@ void
 IBLApplication::initialize()
 {
     DeviceD3D11* device = new DeviceD3D11();
-    Ctr::ApplicationRenderParameters deviceParams(this, "IBLBaker", Ctr::Vector2i(_windowWidth, _windowHeight), _windowed, false);
+    Ctr::ApplicationRenderParameters deviceParams(this, "Custom IBLBaker", Ctr::Vector2i(_windowWidth, _windowHeight), _windowed, false);
 
     if (device->initialize(deviceParams))
     {
@@ -705,23 +705,26 @@ IBLApplication::saveImages(const std::string& filePathName, bool gameOnly)
 
         if (trimmed)
         {
-            std::string specularHDRPath = pathName + fileNameBase + "SpecularHDR.dds";
-            std::string diffuseHDRPath = pathName + fileNameBase + "DiffuseHDR.dds";
-            std::string envHDRPath = pathName + fileNameBase + "EnvHDR.dds";
+            std::string specularHDRPath = pathName + fileNameBase + ".s.dds";
+            std::string diffuseHDRPath = pathName + fileNameBase + ".d.dds";
+            std::string envHDRPath = pathName + fileNameBase + ".env.dds";
 
+#if 0
             std::string specularMDRPath = pathName + fileNameBase + "SpecularMDR.dds";
             std::string diffuseMDRPath = pathName + fileNameBase + "DiffuseMDR.dds";
             std::string envMDRPath = pathName + fileNameBase + "EnvMDR.dds";
+#endif
 
-            std::string brdfLUTPath = pathName + fileNameBase + "Brdf.dds";
+            std::string brdfLUTPath = pathName + fileNameBase + ".dfg.dds";
 
+#if 0
             LOG("Saving RGBM MDR diffuse to " << diffuseMDRPath);
             probe->diffuseCubeMapMDR()->save(diffuseMDRPath, true /* fix seams */, false /* split to RGB MMM */);
             LOG("Saving RGBM MDR specular to " << specularMDRPath);
             probe->specularCubeMapMDR()->save(specularMDRPath, true /* fix seams */, false /* split to RGB MMM */);
             LOG("Saving RGBM MDR environment to " << envMDRPath);
             probe->environmentCubeMapMDR()->save(envMDRPath, true /* fix seams */, false /* split to RGB MMM */);
-
+#endif
 
             // Save the brdf too.
             _scene->activeBrdf()->brdfLut()->save(brdfLUTPath, false, false);

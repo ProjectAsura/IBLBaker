@@ -1,0 +1,158 @@
+//-----------------------------------------------------------------------------
+// File : harlie.brdf
+// Desc : Cloth BRDF
+// Copyright(c) Project Asura. All right reserved.
+//-----------------------------------------------------------------------------
+#define PI 3.14159265358979323f
+#define INV_PI 0.31830988618379067239521257108191f
+
+//------------------------------------------------------------------------------------//
+// LUT compute functions used by IblBrdf.hlsl                                         //
+//------------------------------------------------------------------------------------//
+
+float D_Ashikhmin(float linearRoughness, float NoH)
+{
+    // Ashikhmin 2007, "Distribution-based BRDFs"
+	float a2 = linearRoughness * linearRoughness;
+	float cos2h = NoH * NoH;
+	float sin2h = max(1.0 - cos2h, 0.0078125); // 2^(-14/2), so sin2h^2 > 0 in fp16
+	float sin4h = sin2h * sin2h;
+	float cot2 = -cos2h / (a2 * sin2h);
+	return 1.0 / (PI * (4.0 * a2 + 1.0) * sin4h) * (4.0 * exp(cot2) + sin4h);
+}
+
+float geometryForLut(float roughness, float NoL)
+{
+    float a2 = roughness * roughness;
+    float NL2 = NoL * NoL;
+    return (-1.0f + sqrt(a2 * (1.0f - NL2) / max(NL2, 1e-8f) + 1.0f)) * 0.5f;
+}
+
+// Visibility term
+float visibilityForLut(float roughness, float NoV)
+{
+	float a2 = roughness * roughness;
+    float NV2 = NoV * NoV;
+    return (-1.0f + sqrt(a2 * (1.0f - NV2) / max(NV2, 1e-8f) + 1.0f)) * 0.5f;
+}
+
+// Fresnel Term.
+// Inputs, view dot half angle.
+float fresnelForLut(float VoH)
+{
+    return pow(1.0-VoH, 5);
+}
+
+float disneyDiffuse(float NoV, float NoL, float LoH, float linearRoughness)
+{
+     float energyBias = lerp(0.0f, 0.5f, linearRoughness);
+     float energyFactor = lerp(1.0f, 1.0f / 1.51, linearRoughness);
+     float fd90         = energyBias + 2.0f * LoH * LoH * linearRoughness;
+     float3 f0          = float3(1.0f, 1.0f, 1.0f);
+     float lightScatter = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoL);
+     float viewScatter  = 1.0f + (fd90 - 1.0f) * fresnelForLut(NoV);
+     
+     return lightScatter * viewScatter * energyFactor;
+}
+
+// Summation of Lut term while iterating over samples
+float2 sumLut(float2 current, float G, float V, float F, float VoH, float NoL, float NoH, float NoV)
+{
+    float G2 = 1.0f / max(1.0f + G + V, 1e-8f);
+    float G_Vis = G2 * VoH / (NoH * NoV);
+    current.x += (1.0 - F) * G_Vis;
+    current.y += F * G_Vis;
+
+    return current;
+}
+
+float sumLutDiffuse(float current, float NoV, float NoL, float LoH, float linearRoughness)
+{
+     current += disneyDiffuse(NoV, NoL, LoH, linearRoughness);
+     return current;
+}
+
+
+//------------------------------------------------------------------------------------//
+// Used by IblBrdf.hlsl generation and IblImportanceSamplingSpecular.fx               //
+// Inputs:                                                                            //
+//   Spherical hammersley generated coordinate and roughness.                         //
+//   Roughness                                                                        //
+//   Normal                                                                           //
+// Base on GGX example in:                                                            //
+// http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+//------------------------------------------------------------------------------------//
+float3 importanceSampleGGX(float2 Xi, float roughness, float3 N)
+{
+    float a = roughness * roughness;
+
+    float Phi = 2 * PI * Xi.x;
+    float CosTheta = sqrt((1 - Xi.y) / (1 + (a*a - 1) * Xi.y));
+    float SinTheta = sqrt(1 - CosTheta * CosTheta);
+
+    float3 H;
+    H.x = SinTheta * cos(Phi);
+    H.y = SinTheta * sin(Phi);
+    H.z = CosTheta;
+
+    float3 UpVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 TangentX = normalize(cross(UpVector, N));
+    float3 TangentY = cross(N, TangentX);
+
+    return TangentX * H.x + TangentY * H.y + N * H.z;
+}
+
+
+//------------------------------------------------------------------------------------//
+// Shader functions used by IblImportanceSamplingSpecular.fx                          //
+//------------------------------------------------------------------------------------//
+// D(h) for GGX.
+// http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
+float specularD(float roughness, float NoH)
+{
+	return D_Ashikhmin(roughness, NoH);
+}
+
+float4
+sumSpecular (float3 hdrPixel, float NoL, float4 result)
+{
+    result.xyz += (hdrPixel * NoL);
+    result.w += NoL;
+    return result;
+}
+
+//------------------------------------------------------------------------------------//
+// Shader functions used by IblImportanceSamplingDiffuse.fx                           //
+//------------------------------------------------------------------------------------//
+//
+// Derived from GGX example in:
+// http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+// Image Based Lighting.
+//
+float3 importanceSampleDiffuse(float2 Xi, float3 N )
+{
+    float CosTheta = 1.0-Xi.y;
+    float SinTheta = sqrt(1.0-CosTheta*CosTheta);
+    float Phi = 2*PI*Xi.x;
+
+    float3 H;
+    H.x = SinTheta * cos( Phi );
+    H.y = SinTheta * sin( Phi );
+    H.z = CosTheta;
+
+    float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
+    float3 TangentX = normalize( cross( UpVector, N ) );
+    float3 TangentY = cross( N, TangentX );
+
+    return TangentX * H.x + TangentY * H.y + N * H.z;
+}
+
+
+// Sum the diffuse term while iterating over all samples.
+float4 
+sumDiffuse(float3 diffuseSample, float NoV, float4 result)
+{
+    result.xyz += diffuseSample;
+    result.w++;
+    return result;
+}
