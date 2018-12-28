@@ -733,13 +733,13 @@ IBLApplication::saveImages(const std::string& filePathName, bool gameOnly)
 // This operation on a 2k floating point cubemap with a full mip chain blows
 // through remaining addressable memory on 32bit.
 #if _64BIT
-            probe->environmentCubeMap()->save(envHDRPath, true, false);
+            probe->environmentCubeMap()->save(envHDRPath, false, false);
 #endif
             LOG ("Saving HDR diffuse to " << diffuseHDRPath);
-            probe->diffuseCubeMap()->save(diffuseHDRPath, true, false);
+            probe->diffuseCubeMap()->save(diffuseHDRPath, false, false);
 
             LOG ("Saving HDR specular to " << specularHDRPath);
-            probe->specularCubeMap()->save(specularHDRPath, true, false);
+            probe->specularCubeMap()->save(specularHDRPath, false, false);
 
             return true;
         }

@@ -12,9 +12,13 @@
 
 float D_GGX(float a, float NH)
 {
+    // Eric Heiz, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs",
+    // Journal of Computer Graphics Techiniques Vol.3, No.2, 2014.
+    // éÆ(71) éQè∆.
     float a2 = a * a;
-    float f  = (NH * a2 - NH) * NH + 1;
-    return a2 / max(f * f * PI, 1e-8f);
+    float NH2 = NH * NH;
+    float f = (NH2 * ((a2 - 1) * NH + 1));
+    return a2 / max(PI * f * f, 1e-8f);
 }
 
 float geometryForLut(float roughness, float NoL)
@@ -27,7 +31,7 @@ float geometryForLut(float roughness, float NoL)
 // Visibility term
 float visibilityForLut(float roughness, float NoV)
 {
-	float a2 = roughness * roughness;
+    float a2 = roughness * roughness;
     float NV2 = NoV * NoV;
     return (-1.0f + sqrt(a2 * (1.0f - NV2) / max(NV2, 1e-8f) + 1.0f)) * 0.5f;
 }
