@@ -107,6 +107,8 @@ class IBLApplication : public Ctr::Application
     FloatProperty*             specularIntensityProperty();
     FloatProperty*             roughnessScaleProperty();
 
+    IntProperty*               shOrderProperty();
+
 
     enum VisualizationType
     {
@@ -187,6 +189,8 @@ class IBLApplication : public Ctr::Application
 
     FloatProperty*             _constantRoughnessProperty;
     FloatProperty*             _constantMetalnessProperty;
+
+    IntProperty*               _shOrderProperty;
 
   protected:
     Ctr::Timer                  _timer;

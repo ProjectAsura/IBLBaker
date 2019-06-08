@@ -116,7 +116,8 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src/critter/rendererD3D11/errorD3D11
   ${CMAKE_CURRENT_SOURCE_DIR}/src/critter/resources
   ${CMAKE_CURRENT_SOURCE_DIR}/src/critter/swizzling
-  ${CMAKE_CURRENT_SOURCE_DIR}/ui)
+  ${CMAKE_CURRENT_SOURCE_DIR}/ui
+  ${CMAKE_CURRENT_SOURCE_DIR}/SHMath)
 
 
 # Compile with compiler warnings
@@ -146,6 +147,8 @@ add_executable(IBLBaker WIN32
   src/IblApplication.h
   src/IblApplicationHUD.cpp
   src/IblApplicationHUD.h
+  SHMath/DirectXSH.cpp
+  SHMath/DirectXSHD3D11.cpp
   src/main.cpp
   ${EXTRA_SOURCE})
 

@@ -63,6 +63,9 @@
 #include <strstream>
 #include <Ctrimgui.h>
 
+#include <DirectXSH.h>
+#include <CtrTextureD3D11.h>
+
 namespace Ctr
 {
 namespace
@@ -140,13 +143,15 @@ IBLApplication::IBLApplication(ApplicationHandle instance) :
     _debugTermProperty(new IntProperty(this, "Debug Visualization", new TweakFlags(&DebugAOVType, "Material"))),
     _defaultAsset("data\\meshes\\pistol\\pistol.obj"),
     _runTitles(false),
-    _inputMode(EquirectangularInput)
+    _inputMode(EquirectangularInput),
+    _shOrderProperty(new IntProperty(this, "SH Order"))
 {
     _modelVisualizationProperty->set(0);
     _visualizationSpaceProperty->set(Ctr::IBLApplication::HDR);
     _currentVisualizationSpaceProperty->set(-1);
     _specularIntensityProperty->set(1.0f);
     _roughnessScaleProperty->set(1.0f);
+    _shOrderProperty->set(2);
 
 
 #ifdef _DEBUG
@@ -239,6 +244,12 @@ FloatProperty*
 IBLApplication::roughnessScaleProperty()
 {
     return _roughnessScaleProperty;
+}
+
+IntProperty*
+IBLApplication::shOrderProperty()
+{
+    return _shOrderProperty;
 }
 
 const Window*
@@ -725,6 +736,51 @@ IBLApplication::saveImages(const std::string& filePathName, bool gameOnly)
             LOG("Saving RGBM MDR environment to " << envMDRPath);
             probe->environmentCubeMapMDR()->save(envMDRPath, true /* fix seams */, false /* split to RGB MMM */);
 #endif
+            // [Customize] Output Spherical Harmonics Coefficients. 
+            {
+                auto wrapper = static_cast<Ctr::TextureD3D11*>(probe->environmentCubeMap());
+                if (wrapper != nullptr)
+                {
+                    auto native = reinterpret_cast<ID3D11Texture2D*>(wrapper->texture());
+                    if (native != nullptr)
+                    {
+                        float coeffR[36];
+                        float coeffG[36];
+                        float coeffB[36];
+
+                        auto order = _shOrderProperty->get();
+                        auto ret = DirectX::SHProjectCubeMap(_device->immediateCtx(), size_t(order), native, coeffR, coeffG, coeffB);
+                        if (SUCCEEDED(ret))
+                        {
+                            std::string shPath = pathName + fileNameBase + ".sh";
+
+                            FILE* pFile;
+                            auto ret = fopen_s(&pFile, shPath.c_str(), "w");
+                            if (ret == 0)
+                            {
+                                auto count = order * order;
+                                fprintf_s(pFile, "%d\n", count);
+
+                                for(auto i=0; i<count; ++i)
+                                { fprintf_s(pFile, "%f ", coeffR[i]); }
+                                fprintf(pFile, "\n");
+
+                                for(auto i=0; i<count; ++i)
+                                { fprintf_s(pFile, "%f ", coeffG[i]); }
+                                fprintf(pFile, "\n");
+
+                                for(auto i=0; i<count; ++i)
+                                { fprintf_s(pFile, "%f ", coeffB[i]); }
+                                fprintf(pFile, "\n");
+
+                                fclose(pFile);
+
+                                LOG("Saving Spherical Harmonics Coefficients to " << shPath);
+                            }
+                        }
+                    }
+                }
+            }
 
             // Save the brdf too.
             _scene->activeBrdf()->brdfLut()->save(brdfLUTPath, false, false);

@@ -586,6 +586,7 @@ IBLApplicationHUD::render(const Ctr::Camera* camera)
             imguiSelectionSliderForEnumProperty("Source Resolution", _scene->probes()[0]->sourceResolutionProperty());
             imguiSelectionSliderForEnumProperty("Specular Resolution", _scene->probes()[0]->specularResolutionProperty());
             imguiSelectionSliderForEnumProperty("Diffuse Resolution", _scene->probes()[0]->diffuseResolutionProperty());
+            imguiPropertySlider("SH Order", _iblApplication->shOrderProperty(), 2.0f, 6.0f, 1.0f);
 
             imguiUnindent();
         }
