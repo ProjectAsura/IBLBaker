@@ -752,23 +752,27 @@ IBLApplication::saveImages(const std::string& filePathName, bool gameOnly)
                         auto ret = DirectX::SHProjectCubeMap(_device->immediateCtx(), size_t(order), native, coeffR, coeffG, coeffB);
                         if (SUCCEEDED(ret))
                         {
-                            std::string shPath = pathName + fileNameBase + ".sh";
+                            std::string shPath = pathName + fileNameBase + ".sh.txt";
 
                             FILE* pFile;
                             auto ret = fopen_s(&pFile, shPath.c_str(), "w");
                             if (ret == 0)
                             {
+                                // SH Band Order.
                                 auto count = order * order;
                                 fprintf_s(pFile, "%d\n", count);
 
+                                // Red
                                 for(auto i=0; i<count; ++i)
                                 { fprintf_s(pFile, "%f ", coeffR[i]); }
                                 fprintf(pFile, "\n");
 
+                                // Green
                                 for(auto i=0; i<count; ++i)
                                 { fprintf_s(pFile, "%f ", coeffG[i]); }
                                 fprintf(pFile, "\n");
 
+                                // Blue.
                                 for(auto i=0; i<count; ++i)
                                 { fprintf_s(pFile, "%f ", coeffB[i]); }
                                 fprintf(pFile, "\n");
